@@ -2,6 +2,7 @@
 
 import cmd, json, re, math
 import pprint
+import curses
 from Robinhood import Robinhood
 from terminaltables import SingleTable
 from colorclass import Color
@@ -117,42 +118,47 @@ class RobinhoodShell(cmd.Cmd):
         account_table = SingleTable([['Portfolio Value','Change','Buying Power'],[eq, change+' ('+change_pct+'%)', buying_power]],'Account')
         print((account_table.table))
 
-        # Load Stocks
-        positions = self.trader.securities_owned()
-        instruments = [position['instrument'] for position in positions['results']]
-        symbols = [self.get_symbol(position['instrument']) for position in positions['results']]
+        # Load Cash / Crypto
+        positions = self.trader.crypto_owned()
 
-        market_data = self.trader.get_stock_marketdata(instruments)
+        instruments = [position['currency'] for position in positions['results']]
+
+        market_data = self.trader.get_crypto_marketdata()
 
         table_data = []
-        table_data.append(["Symbol", "Last", "Shares", "Equity", "Avg Cost", "Return" , "Day", "EquityChange", "Day %"])
+        table_data.append(["Symbol", "Last Bid", "Last Ask", "Shares", "Equity", "Cost", "Return"])
 
         i = 0
         for position in positions['results']:
-            quantity = int(float(position['quantity']))
-            symbol = self.get_symbol(position['instrument'])
-            price = market_data[i]['last_trade_price']
+            quantity = float(position['quantity'])
+            symbol = position['currency']['code']
+            if symbol == 'USD':
+                continue #ignore cash
+
+            quote = next((datum for datum in market_data if datum['symbol'] == symbol), None)
+            cost_bases = position['cost_bases']
+            avg_cost = 0
+            for bases in cost_bases:
+                avg_cost += float(bases['direct_cost_basis'])
+            avg_cost = avg_cost / len(cost_bases)
+
+            price = quote['bid_price']
+            last_ask = quote['ask_price']
             total_equity = float(price) * quantity
-            buy_price = float(position['average_buy_price'])
-            p_l = total_equity - buy_price * quantity
-            day_change = float(market_data[i]['last_trade_price']) - float(market_data[i]['previous_close'])
-            day_change_q_val = '{:04.2f}'.format(quantity * day_change)
-            day_change_pct = '{:04.2f}'.format(float(( day_change /
-                float(market_data[i]['previous_close']) ) * 100))
+            buy_price = avg_cost
+            p_l = total_equity - buy_price
             table_data.append([
                 symbol,
-                price,
+                '${:,.2f}'.format(float(price)),
+                '${:,.2f}'.format(float(last_ask)),
                 quantity,
-                total_equity,
-                buy_price,
-                color_data(p_l),
-                color_data(day_change),
-                color_data(day_change_q_val),
-                color_data(day_change_pct)
+                '${:,.2f}'.format(total_equity),
+                '${:,.2f}'.format(buy_price),
+                color_data(p_l)
                 ])
             i += 1
 
-        table = SingleTable(table_data,'Portfolio')
+        table = SingleTable(table_data,'Position')
         table.inner_row_border = True
         table.justify_columns = {0: 'center' }
 
