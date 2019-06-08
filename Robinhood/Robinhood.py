@@ -449,6 +449,12 @@ class Robinhood:
                 "quotes/?instruments=" + ','.join(instruments))
         return info['results']
 
+    def get_crypto_marketdata(self):
+        #only supports BTC for the moment
+        info = self.get_url(endpoints.market_btc_data())
+        info['symbol'] = 'BTC' #standardize
+        return [info] #make array for future compatability
+
     def get_historical_quotes(self, stock, interval, span, bounds=Bounds.REGULAR):
         """Fetch historical data for stock
 
@@ -991,6 +997,9 @@ class Robinhood:
         """
 
         return self.session.get(endpoints.positions() + '?nonzero=true', timeout=15).json()
+
+    def crypto_owned(self):
+        return self.session.get(endpoints.crypto_positions() + '?nonzero=true', timeout=15).json()
 
     ###########################################################################
     #                               PLACE ORDER

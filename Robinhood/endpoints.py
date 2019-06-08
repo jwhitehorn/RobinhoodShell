@@ -1,4 +1,5 @@
 api_url = "https://api.robinhood.com"
+crypto_url = "https://nummus.robinhood.com/"
 
 def login():
     return api_url + "/oauth2/token/"
@@ -58,6 +59,9 @@ def portfolios():
 def positions():
     return api_url + "/positions/"
 
+def crypto_positions():
+    return crypto_url + "/holdings/"
+
 def quotes():
     return api_url + "/quotes/"
 
@@ -96,6 +100,10 @@ def options(chainid, dates, option_type):
 
 def market_data():
     return api_url + "/marketdata/"
+
+def market_btc_data():
+    currency_pair_id = '3d961844-d360-45fc-989b-f6fca761d511' #hardcoded for now
+    return api_url + "/marketdata/forex/quotes/{}/".format(currency_pair_id)
 
 def option_market_data(optionid):
     return api_url + "/marketdata/options/{_optionid}/".format(_optionid=optionid)
