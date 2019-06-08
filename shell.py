@@ -26,7 +26,7 @@ to create a command line interface for interacting with Robinhood
 """
 
 class RobinhoodShell(cmd.Cmd):
-    intro = 'Welcome to the Robinhood shell. Type help or ? to list commands.\n'
+    intro = 'Welcome to the Robinhood Crypto shell. Type help or ? to list commands.\n'
     prompt = '> '
 
     # API Object
