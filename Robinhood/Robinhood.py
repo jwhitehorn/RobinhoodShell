@@ -967,6 +967,11 @@ class Robinhood:
 
         return self.session.get(endpoints.orders(orderId), timeout=15).json()
 
+    @login_required
+    def crypto_order_history(self):
+        return self.session.get(endpoints.crypto_orders(), timeout=15).json()
+
+
     def dividends(self):
         """Wrapper for portfolios
 
@@ -1666,6 +1671,15 @@ class Robinhood:
         orders = self.order_history()
         for order in orders['results']:
             if(order['cancel'] is not None):
+                open_orders.append(order)
+
+        return open_orders
+
+    def get_open_crypto_orders(self):
+        open_orders = []
+        orders = self.crypto_order_history()
+        for order in orders['results']:
+            if(order['cancel_url'] is not None):
                 open_orders.append(order)
 
         return open_orders
