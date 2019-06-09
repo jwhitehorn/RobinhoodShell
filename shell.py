@@ -120,13 +120,14 @@ class RobinhoodShell(cmd.Cmd):
 
         # Load Cash / Crypto
         positions = self.trader.crypto_owned()
+        open_orders = self.trader.get_open_crypto_orders()
 
         instruments = [position['currency'] for position in positions['results']]
 
         market_data = self.trader.get_crypto_marketdata()
 
         table_data = []
-        table_data.append(["Symbol", "Last Bid", "Last Ask", "Shares", "Equity", "Cost", "Return"])
+        table_data.append(["Symbol", "Last Bid", "Last Ask", "Shares", "Equity", "Cost", "Return", "Exit", "Profit on Exit"])
 
         i = 0
         for position in positions['results']:
@@ -136,6 +137,8 @@ class RobinhoodShell(cmd.Cmd):
                 continue #ignore cash
 
             quote = next((datum for datum in market_data if datum['symbol'] == symbol), None)
+            open_exit_order = next((order for order in open_orders if order['side'] == 'sell'), None)  #NOTE: this does not check symbol
+
             cost_bases = position['cost_bases']
             avg_cost = 0
             for bases in cost_bases:
@@ -147,6 +150,14 @@ class RobinhoodShell(cmd.Cmd):
             total_equity = float(price) * quantity
             buy_price = avg_cost
             p_l = total_equity - buy_price
+
+            exit = None
+            profit_on_exit = None
+            if open_exit_order != None:
+                exit_price = float(open_exit_order['price'])
+                exit = '${:,.2f}'.format(exit_price)
+                profit_on_exit = '${:,.2f}'.format(quantity * exit_price - buy_price)
+
             table_data.append([
                 symbol,
                 '${:,.2f}'.format(float(price)),
@@ -154,7 +165,9 @@ class RobinhoodShell(cmd.Cmd):
                 quantity,
                 '${:,.2f}'.format(total_equity),
                 '${:,.2f}'.format(buy_price),
-                color_data(p_l)
+                color_data(p_l),
+                exit,
+                profit_on_exit
                 ])
             i += 1
 
